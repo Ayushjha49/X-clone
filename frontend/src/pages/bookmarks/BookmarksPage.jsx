@@ -28,7 +28,7 @@ const BookmarksPage = () => {
 			)}
 
 			{!isLoading && bookmarks?.length === 0 && (
-				<p className='text-center my-4 text-slate-500'>No bookmarks yet</p>
+				<p className='text-center my-4 text-base-content/50'>No bookmarks yet</p>
 			)}
 
 			{!isLoading && bookmarks?.map((post) => (

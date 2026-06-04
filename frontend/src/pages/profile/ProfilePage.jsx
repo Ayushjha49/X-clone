@@ -15,6 +15,19 @@ import { formatMemberSinceDate } from "../../utils/date";
 import useFollow from "../../hooks/useFollow";
 import useUpdateUserProfile from "../../hooks/updateUserProfile";
 
+const PostCount = ({ username }) => {
+	const { data: posts } = useQuery({
+		queryKey: ["posts", username],
+		queryFn: async () => {
+			const res = await fetch(`/api/posts/user/${username}`);
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || "Something went wrong");
+			return data;
+		},
+	});
+	return <span className='text-sm text-base-content/50'>{posts?.length ?? 0} posts</span>;
+};
+
 const ProfilePage = () => {
 	const [coverImg, setCoverImg] = useState(null);
 	const [profileImg, setProfileImg] = useState(null);
@@ -85,7 +98,7 @@ const ProfilePage = () => {
 								</Link>
 								<div className='flex flex-col'>
 									<p className='font-bold text-lg'>{user?.fullName}</p>
-									<span className='text-sm text-base-content/50'>{user?.posts?.length ?? 0} posts</span>
+									<PostCount username={username} />
 								</div>
 							</div>
 

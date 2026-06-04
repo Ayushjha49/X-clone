@@ -49,8 +49,14 @@ const Post = ({ post }) => {
 		},
 		onSuccess: (updatedLikes) => {
 			queryClient.setQueryData(["posts"], (oldData) => {
+				if (!oldData) return oldData;
 				return oldData.map((p) => {
+					// direct post match
 					if (p._id === displayPost._id) return { ...p, likes: updatedLikes };
+					// retweet whose originalPost matches
+					if (p.isRetweet && p.originalPost?._id === displayPost._id) {
+						return { ...p, originalPost: { ...p.originalPost, likes: updatedLikes } };
+					}
 					return p;
 				});
 			});
@@ -67,7 +73,25 @@ const Post = ({ post }) => {
 		},
 		onSuccess: (data) => {
 			toast.success(data.message);
-			queryClient.invalidateQueries({ queryKey: ["posts"] });
+			const wasRetweeted = isRetweeted;
+			queryClient.setQueryData(["posts"], (oldData) => {
+				if (!oldData) return oldData;
+				return oldData.map((p) => {
+					if (p._id === displayPost._id) {
+						const updatedRetweets = wasRetweeted
+							? p.retweets.filter((id) => id !== authUser._id)
+							: [...p.retweets, authUser._id];
+						return { ...p, retweets: updatedRetweets };
+					}
+					if (p.isRetweet && p.originalPost?._id === displayPost._id) {
+						const updatedRetweets = wasRetweeted
+							? p.originalPost.retweets.filter((id) => id !== authUser._id)
+							: [...p.originalPost.retweets, authUser._id];
+						return { ...p, originalPost: { ...p.originalPost, retweets: updatedRetweets } };
+					}
+					return p;
+				});
+			});
 		},
 		onError: (error) => { toast.error(error.message); },
 	});
@@ -98,10 +122,20 @@ const Post = ({ post }) => {
 			if (!res.ok) throw new Error(data.error || "Something went wrong");
 			return data;
 		},
-		onSuccess: () => {
+		onSuccess: (updatedPost) => {
 			toast.success("Comment posted successfully");
 			setComment("");
-			queryClient.invalidateQueries({ queryKey: ["posts"] });
+			document.getElementById("comments_modal" + displayPost._id)?.close();
+			queryClient.setQueryData(["posts"], (oldData) => {
+				if (!oldData) return oldData;
+				return oldData.map((p) => {
+					if (p._id === displayPost._id) return { ...p, comments: updatedPost.comments };
+					if (p.isRetweet && p.originalPost?._id === displayPost._id) {
+						return { ...p, originalPost: { ...p.originalPost, comments: updatedPost.comments } };
+					}
+					return p;
+				});
+			});
 		},
 		onError: (error) => { toast.error(error.message); },
 	});

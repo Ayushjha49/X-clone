@@ -24,7 +24,7 @@ export const signup = async  (req,res)=>{
 
 
         if(password.length < 6){
-            res.status(400).json({error: 'Password must be atleast 6 characters long'})
+            return res.status(400).json({error: 'Password must be atleast 6 characters long'})
         }
 
         //hash password

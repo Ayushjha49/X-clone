@@ -14,13 +14,13 @@ const notificationSchema = new mongoose.Schema({
     type: {
         type: String,
         required: true,
-        enum: ['follow', 'like']
+        enum: ['follow', 'like', 'retweet', 'bookmark', 'comment']
     },
     read: {
         type: Boolean,
         default: false,
     }
-}, {timestamps: true});
+}, { timestamps: true });
 
 const Notification = mongoose.model('Notification', notificationSchema);
 

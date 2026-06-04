@@ -65,14 +65,14 @@ const SearchPage = () => {
 				<>
 					<div className='flex border-b border-base-300'>
 						<div
-							className={`flex justify-center flex-1 p-3 cursor-pointer hover:bg-base-200 transition duration-300 relative ${tab === "users" ? "font-semibold" : "text-slate-500"}`}
+							className={`flex justify-center flex-1 p-3 cursor-pointer hover:bg-base-200 transition duration-300 relative ${tab === "users" ? "font-semibold" : "text-base-content/50"}`}
 							onClick={() => setTab("users")}
 						>
 							Users
 							{tab === "users" && <div className='absolute bottom-0 w-10 h-1 rounded-full bg-primary' />}
 						</div>
 						<div
-							className={`flex justify-center flex-1 p-3 cursor-pointer hover:bg-base-200 transition duration-300 relative ${tab === "posts" ? "font-semibold" : "text-slate-500"}`}
+							className={`flex justify-center flex-1 p-3 cursor-pointer hover:bg-base-200 transition duration-300 relative ${tab === "posts" ? "font-semibold" : "text-base-content/50"}`}
 							onClick={() => setTab("posts")}
 						>
 							Posts
