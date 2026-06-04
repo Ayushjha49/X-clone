@@ -150,7 +150,7 @@ export const updateUser = async (req,res) => {
         user.bio = bio || user.bio;
         user.link = link || user.link;
         user.profileImg = profileImg || user.profileImg;
-        user.coverImg = profileImg || user.coverImg;
+        user.coverImg = coverImg || user.coverImg;
 
         user = await user.save();
 
@@ -164,3 +164,24 @@ export const updateUser = async (req,res) => {
         res.status(500).json({error: error.message});
     }
 }
+
+export const searchUsers = async (req, res) => {
+	try {
+		const { q } = req.query;
+		if (!q) return res.status(400).json({ error: "Query is required" });
+
+		const users = await User.find({
+			$or: [
+				{ username: { $regex: q, $options: "i" } },
+				{ fullName: { $regex: q, $options: "i" } },
+			],
+		})
+			.select("-password")
+			.limit(10);
+
+		res.status(200).json(users);
+	} catch (error) {
+		console.log("Error in searchUsers controller: ", error.message);
+		res.status(500).json({ error: "Internal server error" });
+	}
+};

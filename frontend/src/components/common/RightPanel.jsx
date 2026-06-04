@@ -6,34 +6,31 @@ import RightPanelSkeleton from "../skeletons/RightPanelSkeleton.jsx";
 import LoadingSpinner from "./LoadingSpinner.jsx";
 
 const RightPanel = () => {
-	const {data:suggestedUsers, isLoading} = useQuery({
+	const { data: suggestedUsers, isLoading } = useQuery({
 		queryKey: ["suggestedUsers"],
 		queryFn: async () => {
 			try {
 				const res = await fetch("/api/users/suggested");
 				const data = await res.json();
-				if(!res.ok){
-					throw new Error(data.message || "Something went wrong");
-				}
+				if (!res.ok) throw new Error(data.message || "Something went wrong");
 				return data;
 			} catch (error) {
 				throw new Error(error.message);
 			}
-		}
+		},
 	});
 
-	const {follow, isPending } = useFollow();
+	const { follow, isPending } = useFollow();
 
-	if(suggestedUsers?.length === 0){
-		return <div className="md:w-64 w-0"></div>;
+	if (suggestedUsers?.length === 0) {
+		return <div className='md:w-64 w-0'></div>;
 	}
 
 	return (
 		<div className='hidden lg:block my-4 mx-2'>
-			<div className='bg-[#16181C] p-4 rounded-md sticky top-2'>
+			<div className='bg-base-200 p-4 rounded-md sticky top-2'>
 				<p className='font-bold'>Who to follow</p>
 				<div className='flex flex-col gap-4'>
-					{/* item */}
 					{isLoading && (
 						<>
 							<RightPanelSkeleton />
@@ -59,18 +56,18 @@ const RightPanel = () => {
 										<span className='font-semibold tracking-tight truncate w-28'>
 											{user.fullName}
 										</span>
-										<span className='text-sm text-slate-500'>@{user.username}</span>
+										<span className='text-sm text-base-content/60'>@{user.username}</span>
 									</div>
 								</div>
 								<div>
 									<button
-										className='btn bg-white text-black hover:bg-white hover:opacity-90 rounded-full btn-sm'
+										className='btn bg-base-content text-base-100 hover:bg-base-content/80 rounded-full btn-sm'
 										onClick={(e) => {
 											e.preventDefault();
 											follow(user._id);
 										}}
 									>
-										{isPending ? <LoadingSpinner size="sm"/> : "Follow"}
+										{isPending ? <LoadingSpinner size='sm' /> : "Follow"}
 									</button>
 								</div>
 							</Link>
