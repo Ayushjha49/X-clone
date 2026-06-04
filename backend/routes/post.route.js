@@ -11,6 +11,7 @@ import {
 	likeUnlikePost,
 	retweetPost,
 	searchPosts,
+	getPostById,
 } from "../controllers/post.controller.js";
 
 const router = express.Router();
@@ -20,6 +21,7 @@ router.get("/following", protectRoute, getFollowingPosts);
 router.get("/likes/:id", protectRoute, getLikedPosts);
 router.get("/user/:username", protectRoute, getUserPosts);
 router.get("/search", protectRoute, searchPosts);
+router.get("/:id", protectRoute, getPostById);
 router.post("/create", protectRoute, createPost);
 router.post("/like/:id", protectRoute, likeUnlikePost);
 router.post("/retweet/:id", protectRoute, retweetPost);

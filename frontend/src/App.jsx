@@ -8,6 +8,7 @@ import NotificationPage from "./pages/notification/NotificationPage.jsx";
 import ProfilePage from "./pages/profile/ProfilePage.jsx";
 import BookmarksPage from "./pages/bookmarks/BookmarksPage.jsx";
 import SearchPage from "./pages/search/SearchPage.jsx";
+import PostDetailPage from "./pages/post/PostDetailPage.jsx";
 
 import Sidebar from "./components/common/Sidebar.jsx";
 import RightPanel from "./components/common/RightPanel.jsx";
@@ -57,6 +58,7 @@ function App() {
         <Route path='/profile/:username' element={authUser ? <ProfilePage /> : <Navigate to='/login' />} />
         <Route path='/bookmarks' element={authUser ? <BookmarksPage /> : <Navigate to='/login' />} />
         <Route path='/search' element={authUser ? <SearchPage /> : <Navigate to='/login' />} />
+        <Route path='/post/:id' element={authUser ? <PostDetailPage /> : <Navigate to='/login' />} />
       </Routes>
       {authUser && <RightPanel />}
       <Toaster />

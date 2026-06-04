@@ -3,6 +3,7 @@ import { BiRepost } from "react-icons/bi";
 import { FaRegHeart, FaHeart } from "react-icons/fa";
 import { FaRegBookmark, FaBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
+import { IoClose } from "react-icons/io5";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -13,6 +14,7 @@ import useRelativeTime from "../../hooks/useRelativeTime.js";
 
 const Post = ({ post }) => {
 	const [comment, setComment] = useState("");
+	const [lightboxImg, setLightboxImg] = useState(null);
 	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 	const queryClient = useQueryClient();
 
@@ -51,9 +53,7 @@ const Post = ({ post }) => {
 			queryClient.setQueryData(["posts"], (oldData) => {
 				if (!oldData) return oldData;
 				return oldData.map((p) => {
-					// direct post match
 					if (p._id === displayPost._id) return { ...p, likes: updatedLikes };
-					// retweet whose originalPost matches
 					if (p.isRetweet && p.originalPost?._id === displayPost._id) {
 						return { ...p, originalPost: { ...p.originalPost, likes: updatedLikes } };
 					}
@@ -148,6 +148,27 @@ const Post = ({ post }) => {
 
 	return (
 		<>
+			{/* Image Lightbox */}
+			{lightboxImg && (
+				<div
+					className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90'
+					onClick={() => setLightboxImg(null)}
+				>
+					<button
+						className='absolute top-4 right-4 text-white hover:text-gray-300'
+						onClick={() => setLightboxImg(null)}
+					>
+						<IoClose className='w-8 h-8' />
+					</button>
+					<img
+						src={lightboxImg}
+						className='max-h-screen max-w-screen-lg object-contain p-4'
+						onClick={(e) => e.stopPropagation()}
+						alt='fullscreen'
+					/>
+				</div>
+			)}
+
 			<div className='flex flex-col border-b border-base-300'>
 				{/* Retweet label */}
 				{post.isRetweet && (
@@ -182,12 +203,16 @@ const Post = ({ post }) => {
 							)}
 						</div>
 						<div className='flex flex-col gap-3 overflow-hidden'>
-							<span>{displayPost.text}</span>
+							{/* Post text links to detail page */}
+							<Link to={`/post/${displayPost._id}`}>
+								<span className='hover:underline cursor-pointer'>{displayPost.text}</span>
+							</Link>
 							{displayPost.img && (
 								<img
 									src={displayPost.img}
-									className='h-80 object-contain rounded-lg border border-base-300'
+									className='h-80 object-contain rounded-lg border border-base-300 cursor-zoom-in'
 									alt=''
+									onClick={() => setLightboxImg(displayPost.img)}
 								/>
 							)}
 						</div>
