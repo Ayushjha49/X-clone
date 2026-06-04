@@ -76,7 +76,8 @@ export const commentOnPost = async (req, res) => {
             await notification.save();
         }
 
-        res.status(200).json(post);
+        const populatedPost = await populatePost(Post.findById(postId));
+        res.status(200).json(populatedPost);
     } catch (error) {
         console.log("Error in commentOnPost controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });

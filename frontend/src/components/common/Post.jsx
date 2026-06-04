@@ -124,15 +124,26 @@ const Post = ({ post }) => {
 		},
 		onSuccess: (updatedPost) => {
 			toast.success("Comment posted successfully");
+			const newComment = updatedPost.comments[updatedPost.comments.length - 1];
+			// Attach the full authUser object so name/avatar render immediately
+			const populatedComment = {
+				...newComment,
+				user: authUser,
+			};
+			const mergeComments = (existingComments) => {
+				// Replace the last comment (which has a bare user ID) with the populated version
+				const withoutLast = existingComments.slice(0, -1);
+				return [...withoutLast, populatedComment];
+			};
 			setComment("");
 			document.getElementById("comments_modal" + displayPost._id)?.close();
 			queryClient.setQueryData(["posts"], (oldData) => {
 				if (!oldData) return oldData;
 				return oldData.map((p) => {
-					if (p._id === displayPost._id) return { ...p, comments: updatedPost.comments };
-					if (p.isRetweet && p.originalPost?._id === displayPost._id) {
-						return { ...p, originalPost: { ...p.originalPost, comments: updatedPost.comments } };
-					}
+					if (p._id === displayPost._id)
+						return { ...p, comments: mergeComments(updatedPost.comments) };
+					if (p.isRetweet && p.originalPost?._id === displayPost._id)
+						return { ...p, originalPost: { ...p.originalPost, comments: mergeComments(updatedPost.comments) } };
 					return p;
 				});
 			});

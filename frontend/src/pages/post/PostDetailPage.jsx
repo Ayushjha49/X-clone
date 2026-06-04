@@ -110,11 +110,15 @@ const PostDetailPage = () => {
 		},
 		onSuccess: (updatedPost) => {
 			toast.success("Comment posted successfully");
+			const newComment = updatedPost.comments[updatedPost.comments.length - 1];
+			const populatedComment = { ...newComment, user: authUser };
+			const mergeComments = (existing) => [...existing.slice(0, -1), populatedComment];
 			setComment("");
 			queryClient.setQueryData(["post", id], (old) => {
 				if (!old) return old;
-				if (old.isRetweet) return { ...old, originalPost: { ...old.originalPost, comments: updatedPost.comments } };
-				return { ...old, comments: updatedPost.comments };
+				if (old.isRetweet)
+					return { ...old, originalPost: { ...old.originalPost, comments: mergeComments(updatedPost.comments) } };
+				return { ...old, comments: mergeComments(updatedPost.comments) };
 			});
 		},
 		onError: (error) => { toast.error(error.message); },
