@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { useQuery } from "@tanstack/react-query";
@@ -8,60 +8,57 @@ import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
 
 const SearchPage = () => {
 	const [query, setQuery] = useState("");
-	const [submitted, setSubmitted] = useState("");
+	const [debouncedQuery, setDebouncedQuery] = useState("");
 	const [tab, setTab] = useState("users");
 
+	// Debounce: update debouncedQuery 400ms after the user stops typing
+	useEffect(() => {
+		const timer = setTimeout(() => {
+			setDebouncedQuery(query.trim());
+		}, 400);
+		return () => clearTimeout(timer);
+	}, [query]);
+
 	const { data: users, isFetching: usersLoading } = useQuery({
-		queryKey: ["searchUsers", submitted],
+		queryKey: ["searchUsers", debouncedQuery],
 		queryFn: async () => {
-			if (!submitted) return [];
-			const res = await fetch(`/api/users/search?q=${encodeURIComponent(submitted)}`);
+			const res = await fetch(`/api/users/search?q=${encodeURIComponent(debouncedQuery)}`);
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error || "Something went wrong");
 			return data;
 		},
-		enabled: !!submitted,
+		enabled: !!debouncedQuery,
 	});
 
 	const { data: posts, isFetching: postsLoading } = useQuery({
-		queryKey: ["searchPosts", submitted],
+		queryKey: ["searchPosts", debouncedQuery],
 		queryFn: async () => {
-			if (!submitted) return [];
-			const res = await fetch(`/api/posts/search?q=${encodeURIComponent(submitted)}`);
+			const res = await fetch(`/api/posts/search?q=${encodeURIComponent(debouncedQuery)}`);
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error || "Something went wrong");
 			return data;
 		},
-		enabled: !!submitted,
+		enabled: !!debouncedQuery,
 	});
-
-	const handleSearch = (e) => {
-		e.preventDefault();
-		if (query.trim()) setSubmitted(query.trim());
-	};
 
 	return (
 		<div className='flex-[4_4_0] border-r border-base-300 min-h-screen'>
 			<div className='p-4 border-b border-base-300'>
 				<p className='font-bold text-lg mb-3'>Search</p>
-				<form onSubmit={handleSearch} className='flex gap-2'>
-					<div className='flex items-center gap-2 bg-base-200 rounded-full px-4 py-2 flex-1'>
-						<FiSearch className='text-slate-500 w-4 h-4' />
-						<input
-							type='text'
-							placeholder='Search users or posts...'
-							className='bg-transparent outline-none w-full text-sm'
-							value={query}
-							onChange={(e) => setQuery(e.target.value)}
-						/>
-					</div>
-					<button type='submit' className='btn btn-primary btn-sm rounded-full text-white px-4'>
-						Search
-					</button>
-				</form>
+				<div className='flex items-center gap-2 bg-base-200 rounded-full px-4 py-2'>
+					<FiSearch className='text-slate-500 w-4 h-4 flex-shrink-0' />
+					<input
+						type='text'
+						placeholder='Search users or posts...'
+						className='bg-transparent outline-none w-full text-sm'
+						value={query}
+						onChange={(e) => setQuery(e.target.value)}
+					/>
+					{(usersLoading || postsLoading) && <LoadingSpinner size='sm' />}
+				</div>
 			</div>
 
-			{submitted && (
+			{debouncedQuery && (
 				<>
 					<div className='flex border-b border-base-300'>
 						<div
@@ -88,7 +85,7 @@ const SearchPage = () => {
 								</div>
 							)}
 							{!usersLoading && users?.length === 0 && (
-								<p className='text-center my-4 text-slate-500'>No users found for "{submitted}"</p>
+								<p className='text-center my-4 text-slate-500'>No users found for "{debouncedQuery}"</p>
 							)}
 							{!usersLoading && users?.map((user) => (
 								<Link
@@ -120,7 +117,7 @@ const SearchPage = () => {
 								</div>
 							)}
 							{!postsLoading && posts?.length === 0 && (
-								<p className='text-center my-4 text-slate-500'>No posts found for "{submitted}"</p>
+								<p className='text-center my-4 text-slate-500'>No posts found for "{debouncedQuery}"</p>
 							)}
 							{!postsLoading && posts?.map((post) => (
 								<Post key={post._id} post={post} />
@@ -130,7 +127,7 @@ const SearchPage = () => {
 				</>
 			)}
 
-			{!submitted && (
+			{!debouncedQuery && (
 				<p className='text-center mt-10 text-slate-500'>Search for users or posts above</p>
 			)}
 		</div>

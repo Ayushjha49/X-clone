@@ -16,16 +16,16 @@ import useFollow from "../../hooks/useFollow";
 import useUpdateUserProfile from "../../hooks/updateUserProfile";
 
 const PostCount = ({ username }) => {
-	const { data: posts } = useQuery({
-		queryKey: ["posts", username],
+	const { data } = useQuery({
+		queryKey: ["postCount", username],
 		queryFn: async () => {
-			const res = await fetch(`/api/posts/user/${username}`);
+			const res = await fetch(`/api/posts/user/${username}/count`);
 			const data = await res.json();
 			if (!res.ok) throw new Error(data.error || "Something went wrong");
 			return data;
 		},
 	});
-	return <span className='text-sm text-base-content/50'>{posts?.length ?? 0} posts</span>;
+	return <span className='text-sm text-base-content/50'>{data?.count ?? 0} posts</span>;
 };
 
 const ProfilePage = () => {

@@ -39,15 +39,20 @@ export const bookmarkPost = async (req, res) => {
 
 export const getBookmarks = async (req, res) => {
     try {
+        const limit = 10;
+        const { cursor } = req.query;
         const userId = req.user._id;
         const user = await User.findById(userId);
 
-        const bookmarkedPosts = await Post.find({ _id: { $in: user.bookmarks } })
+        const filter = { _id: { $in: user.bookmarks }, ...(cursor ? { createdAt: { $lt: new Date(cursor) } } : {}) };
+        const bookmarkedPosts = await Post.find(filter)
             .sort({ createdAt: -1 })
+            .limit(limit)
             .populate({ path: "user", select: "-password" })
             .populate({ path: "comments.user", select: "-password" });
 
-        res.status(200).json(bookmarkedPosts);
+        const nextCursor = bookmarkedPosts.length === limit ? bookmarkedPosts[bookmarkedPosts.length - 1].createdAt.toISOString() : null;
+        res.status(200).json({ posts: bookmarkedPosts, nextCursor });
     } catch (error) {
         console.log("Error in getBookmarks controller: ", error.message);
         res.status(500).json({ error: "Internal server error" });
