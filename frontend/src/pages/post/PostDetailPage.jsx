@@ -179,7 +179,7 @@ const PostDetailPage = () => {
 			<div className='flex items-center gap-4 p-4 border-b border-base-300'>
 				<button
 					onClick={() => window.history.back()}
-					className='p-2 rounded-full hover:bg-white/15 transition-colors duration-200'
+					className='p-2 rounded-full hover:bg-base-content/10 transition-colors duration-200'
 				>
 					<FaArrowLeft className='w-4 h-4' />
 				</button>

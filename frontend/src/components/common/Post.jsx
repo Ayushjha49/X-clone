@@ -221,7 +221,7 @@ const Post = ({ post }) => {
 				/>
 			)}
 
-			<div className='flex flex-col border-b border-base-300 cursor-pointer' onClick={handleCardClick}>
+			<div className='flex flex-col border-b border-base-300 cursor-pointer hover:bg-base-content/[0.03] transition-colors duration-200' onClick={handleCardClick}>
 				{post.isRetweet && (
 					<div className='flex items-center gap-1 text-xs text-base-content/50 pt-2 pl-14'>
 						<BiRepost className='w-4 h-4' />
