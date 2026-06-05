@@ -257,14 +257,22 @@ const Post = ({ post }) => {
 									@{postOwner.username}
 								</Link>
 								<span>·</span>
-								<span>{formattedDate}</span>
+								<span
+									title={new Date(displayPost.createdAt).toLocaleString("en-US", {
+										month: "long", day: "numeric", year: "numeric",
+										hour: "numeric", minute: "2-digit",
+									})}
+									className='cursor-default'
+								>
+									{formattedDate}
+								</span>
 							</span>
 							{isMyPost && (
 								<span className='flex justify-end flex-1'>
 									{!isDeleting ? (
 										<FaTrash
 											className='cursor-pointer hover:text-red-500'
-											onClick={(e) => { e.stopPropagation(); deletePost(); }}
+											onClick={(e) => { e.stopPropagation(); if (window.confirm("Delete this post? This cannot be undone.")) deletePost(); }}
 										/>
 									) : (
 										<LoadingSpinner size='sm' />
@@ -329,7 +337,7 @@ const Post = ({ post }) => {
 												value={comment}
 												onChange={(e) => setComment(e.target.value)}
 											/>
-											<button className='btn btn-primary rounded-full btn-sm text-white px-4'>
+											<button className='btn btn-primary rounded-full btn-sm text-white px-4' disabled={isCommenting || !comment.trim()}>
 												{isCommenting ? <LoadingSpinner size='md' /> : "Post"}
 											</button>
 										</form>

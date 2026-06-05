@@ -8,6 +8,7 @@ import {
     editComment,
     deleteComment,
     replyToComment,
+    deleteReply,
     getAllPosts,
     getFollowingPosts,
     getLikedPosts,
@@ -38,6 +39,7 @@ router.post("/retweet/:id", protectRoute, retweetPost);
 router.post("/comment/:id", protectRoute, commentOnPost);
 router.put("/comment/:postId/:commentId", protectRoute, editComment);
 router.post("/comment/:postId/:commentId/reply", protectRoute, replyToComment);
+router.delete("/comment/:postId/:commentId/reply/:replyId", protectRoute, deleteReply);
 router.delete("/comment/:postId/:commentId", protectRoute, deleteComment);
 router.delete("/:id", protectRoute, deletePost);
 

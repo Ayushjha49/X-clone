@@ -209,6 +209,34 @@ export const replyToComment = async (req, res) => {
     }
 };
 
+export const deleteReply = async (req, res) => {
+    try {
+        const { postId, commentId, replyId } = req.params;
+        const userId = req.user._id;
+
+        const post = await Post.findById(postId);
+        if (!post) return res.status(404).json({ error: "Post not found" });
+
+        const comment = post.comments.id(commentId);
+        if (!comment) return res.status(404).json({ error: "Comment not found" });
+
+        const reply = comment.replies.id(replyId);
+        if (!reply) return res.status(404).json({ error: "Reply not found" });
+
+        if (reply.user.toString() !== userId.toString())
+            return res.status(403).json({ error: "Not authorized to delete this reply" });
+
+        comment.replies.pull({ _id: replyId });
+        await post.save();
+
+        const populatedPost = await populatePost(Post.findById(postId));
+        res.status(200).json(populatedPost);
+    } catch (error) {
+        console.log("Error in deleteReply controller: ", error.message);
+        res.status(500).json({ error: "Internal server error" });
+    }
+};
+
 export const likeUnlikePost = async (req, res) => {
     try {
         const { id: postId } = req.params;

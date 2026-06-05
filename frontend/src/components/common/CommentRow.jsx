@@ -6,6 +6,31 @@ import { toast } from "react-hot-toast";
 import Avatar from "./Avatar.jsx";
 import LoadingSpinner from "./LoadingSpinner.jsx";
 
+// Small isolated component so each reply has its own isPending state
+const DeleteReplyButton = ({ postId, commentId, replyId, onPostUpdated }) => {
+	const { mutate: deleteReply, isPending } = useMutation({
+		mutationFn: async () => {
+			const res = await fetch(`/api/posts/comment/${postId}/${commentId}/reply/${replyId}`, { method: "DELETE" });
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || "Something went wrong");
+			return data;
+		},
+		onSuccess: (updatedPost) => onPostUpdated(updatedPost),
+		onError: (e) => toast.error(e.message),
+	});
+
+	if (isPending) return <LoadingSpinner size='sm' />;
+
+	return (
+		<FaTrash
+			className='w-2.5 h-2.5 text-base-content/40 hover:text-red-500 cursor-pointer flex-shrink-0'
+			onClick={() => {
+				if (window.confirm("Delete this reply?")) deleteReply();
+			}}
+		/>
+	);
+};
+
 const CommentRow = ({ comment, postId, authUser, onPostUpdated }) => {
 	const [editing, setEditing] = useState(false);
 	const [editText, setEditText] = useState(comment.text);
@@ -164,17 +189,27 @@ const CommentRow = ({ comment, postId, authUser, onPostUpdated }) => {
 			{/* Replies list */}
 			{showReplies && comment.replies?.length > 0 && (
 				<div className='ml-10 flex flex-col gap-2 mt-1 border-l-2 border-base-300 pl-3'>
-					{comment.replies.map((reply, idx) => (
-						<div key={idx} className='flex gap-2 items-start'>
+					{comment.replies.map((reply) => (
+						<div key={reply._id} className='flex gap-2 items-start'>
 							<div className='avatar'>
 								<div className='w-6 rounded-full'>
 									<Avatar src={reply.user?.profileImg || "/avatar-placeholder.png"} />
 								</div>
 							</div>
-							<div className='flex flex-col'>
-								<div className='flex items-center gap-1'>
-									<span className='font-bold text-xs'>{reply.user?.fullName}</span>
-									<span className='text-base-content/50 text-xs'>@{reply.user?.username}</span>
+							<div className='flex flex-col flex-1'>
+								<div className='flex items-center justify-between gap-1'>
+									<div className='flex items-center gap-1'>
+										<span className='font-bold text-xs'>{reply.user?.fullName}</span>
+										<span className='text-base-content/50 text-xs'>@{reply.user?.username}</span>
+									</div>
+									{authUser._id === reply.user?._id && (
+										<DeleteReplyButton
+											postId={postId}
+											commentId={comment._id}
+											replyId={reply._id}
+											onPostUpdated={onPostUpdated}
+										/>
+									)}
 								</div>
 								<p className='text-xs mt-0.5'>{reply.text}</p>
 							</div>
