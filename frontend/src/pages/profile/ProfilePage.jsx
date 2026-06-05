@@ -4,6 +4,8 @@ import { Link, useParams } from "react-router-dom";
 import Posts from "../../components/common/Posts";
 import ProfileHeaderSkeleton from "../../components/skeletons/ProfileHeaderSkeleton";
 import EditProfileModal from "./EditProfileModal";
+import ImageLightbox from "../../components/common/ImageLightbox.jsx";
+import FollowListModal from "../../components/common/FollowListModal.jsx";
 
 import { FaArrowLeft } from "react-icons/fa6";
 import { IoCalendarOutline } from "react-icons/io5";
@@ -14,6 +16,7 @@ import { formatMemberSinceDate } from "../../utils/date";
 
 import useFollow from "../../hooks/useFollow";
 import useUpdateUserProfile from "../../hooks/updateUserProfile";
+import Avatar from "../../components/common/Avatar.jsx";
 
 const PostCount = ({ username }) => {
 	const { data } = useQuery({
@@ -32,13 +35,15 @@ const ProfilePage = () => {
 	const [coverImg, setCoverImg] = useState(null);
 	const [profileImg, setProfileImg] = useState(null);
 	const [feedType, setFeedType] = useState("posts");
+	const [lightbox, setLightbox] = useState(null); // "profile" | "cover" | null
+	const [followModal, setFollowModal] = useState(null); // "followers" | "following" | null
 
 	const coverImgRef = useRef(null);
 	const profileImgRef = useRef(null);
 
 	const { username } = useParams();
 
-	const { follow, isPending } = useFollow();
+	const { follow, isFollowPending } = useFollow();
 	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 
 	const {
@@ -47,7 +52,7 @@ const ProfilePage = () => {
 		refetch,
 		isRefetching,
 	} = useQuery({
-		queryKey: ["userProfile"],
+		queryKey: ["userProfile", username], // ← includes username so different profiles don't share cache
 		queryFn: async () => {
 			try {
 				const res = await fetch(`/api/users/profile/${username}`);
@@ -84,6 +89,29 @@ const ProfilePage = () => {
 
 	return (
 		<>
+			{/* Image lightbox */}
+			{lightbox === "profile" && (
+				<ImageLightbox
+					src={user?.profileImg || "/avatar-placeholder.png"}
+					onClose={() => setLightbox(null)}
+				/>
+			)}
+			{lightbox === "cover" && (
+				<ImageLightbox
+					src={user?.coverImg || "/cover.png"}
+					onClose={() => setLightbox(null)}
+				/>
+			)}
+
+			{/* Followers/Following modal */}
+			{followModal && (
+				<FollowListModal
+					username={username}
+					type={followModal}
+					onClose={() => setFollowModal(null)}
+				/>
+			)}
+
 			<div className='flex-[4_4_0] border-r border-base-300 min-h-screen'>
 				{(isLoading || isRefetching) && <ProfileHeaderSkeleton />}
 				{!isLoading && !isRefetching && !user && (
@@ -106,8 +134,10 @@ const ProfilePage = () => {
 							<div className='relative group/cover'>
 								<img
 									src={coverImg || user?.coverImg || "/cover.png"}
-									className='h-52 w-full object-cover'
+									className='h-52 w-full object-cover cursor-pointer'
 									alt='cover image'
+									onError={(e) => { e.target.onerror = null; e.target.src = "/cover.png"; }}
+									onClick={() => !coverImg && setLightbox("cover")}
 								/>
 								{isMyProfile && (
 									<div
@@ -123,15 +153,19 @@ const ProfilePage = () => {
 								{/* USER AVATAR */}
 								<div className='avatar absolute -bottom-16 left-4'>
 									<div className='w-32 rounded-full relative group/avatar'>
-										<img src={profileImg || user?.profileImg || "/avatar-placeholder.png"} />
-										<div className='absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer'>
-											{isMyProfile && (
+										<Avatar
+											src={profileImg || user?.profileImg || "/avatar-placeholder.png"}
+											className='cursor-pointer'
+											onClick={() => !profileImg && setLightbox("profile")}
+										/>
+										{isMyProfile && (
+											<div className='absolute top-5 right-3 p-1 bg-primary rounded-full group-hover/avatar:opacity-100 opacity-0 cursor-pointer'>
 												<MdEdit
 													className='w-4 h-4 text-white'
 													onClick={() => profileImgRef.current.click()}
 												/>
-											)}
-										</div>
+											</div>
+										)}
 									</div>
 								</div>
 							</div>
@@ -143,9 +177,9 @@ const ProfilePage = () => {
 										className='btn btn-outline rounded-full btn-sm'
 										onClick={() => follow(user?._id)}
 									>
-										{isPending && "Loading..."}
-										{!isPending && amIFollowing && "Unfollow"}
-										{!isPending && !amIFollowing && "Follow"}
+										{isFollowPending(user?._id) && "Loading..."}
+										{!isFollowPending(user?._id) && amIFollowing && "Unfollow"}
+										{!isFollowPending(user?._id) && !amIFollowing && "Follow"}
 									</button>
 								)}
 								{(coverImg || profileImg) && (
@@ -187,15 +221,21 @@ const ProfilePage = () => {
 										<span className='text-sm text-base-content/50'>{memberSinceDate}</span>
 									</div>
 								</div>
-								<div className='flex gap-2'>
-									<div className='flex gap-1 items-center'>
+								<div className='flex gap-4'>
+									<button
+										className='flex gap-1 items-center hover:underline'
+										onClick={() => setFollowModal("following")}
+									>
 										<span className='font-bold text-xs'>{user?.following.length}</span>
 										<span className='text-base-content/50 text-xs'>Following</span>
-									</div>
-									<div className='flex gap-1 items-center'>
+									</button>
+									<button
+										className='flex gap-1 items-center hover:underline'
+										onClick={() => setFollowModal("followers")}
+									>
 										<span className='font-bold text-xs'>{user?.followers.length}</span>
 										<span className='text-base-content/50 text-xs'>Followers</span>
-									</div>
+									</button>
 								</div>
 							</div>
 

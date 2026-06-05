@@ -29,6 +29,13 @@ const postSchema = new mongoose.Schema({
 				ref: "User",
 				required: true,
 			},
+			replies: [
+				{
+					text: { type: String, required: true },
+					user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+					createdAt: { type: Date, default: Date.now },
+				},
+			],
 		},
 	],
 	retweets: [
@@ -37,7 +44,6 @@ const postSchema = new mongoose.Schema({
 			ref: "User",
 		},
 	],
-	// If this post is a retweet, originalPost points to the source
 	originalPost: {
 		type: mongoose.Schema.Types.ObjectId,
 		ref: "Post",
@@ -48,6 +54,12 @@ const postSchema = new mongoose.Schema({
 		default: false,
 	},
 }, { timestamps: true });
+
+// Indexes for frequently queried fields
+postSchema.index({ createdAt: -1 });
+postSchema.index({ user: 1, createdAt: -1 });
+postSchema.index({ likes: 1 });
+postSchema.index({ text: "text" }); // Full-text search index
 
 const Post = mongoose.model("Post", postSchema);
 

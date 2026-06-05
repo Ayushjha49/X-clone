@@ -1,8 +1,9 @@
+import "./env.js"; // must be first — loads dotenv before any other imports use process.env
 import path from "path";
 import express from "express";
-import dotenv from "dotenv";
 import cookieParser from "cookie-parser";
 import { v2 as cloudinary } from "cloudinary";
+import passport from "./middleware/passport.js";
 
 import authRoutes from "./routes/auth.route.js";
 import userRoutes from "./routes/user.route.js";
@@ -12,8 +13,6 @@ import bookmarkRoutes from "./routes/bookmark.route.js";
 import rateLimiter from "./middleware/rateLimiter.js";
 
 import connectMongoDB from "./db/connectMongoDB.js";
-
-dotenv.config();
 
 cloudinary.config({
 	cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -28,8 +27,9 @@ const __dirname = path.resolve();
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(passport.initialize());
 
-// Rate limit only login and signup — not /me which is called on every page load
+// Rate limit only login and signup
 app.use("/api/auth/login", rateLimiter(10, 15 * 60 * 1000));
 app.use("/api/auth/signup", rateLimiter(10, 15 * 60 * 1000));
 

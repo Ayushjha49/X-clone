@@ -10,6 +10,7 @@ import { BiLogOut } from "react-icons/bi";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 import useTheme from "../../hooks/useTheme.js";
+import Avatar from "./Avatar.jsx";
 
 const Sidebar = () => {
 	const queryClient = useQueryClient();
@@ -75,7 +76,9 @@ const Sidebar = () => {
 							<div className='relative'>
 								<IoNotifications className='w-6 h-6' />
 								{hasUnread && (
-									<span className='absolute -top-1 -right-1 w-2.5 h-2.5 bg-primary rounded-full' />
+									<span className='absolute -top-1 -right-1 min-w-[16px] h-4 bg-primary rounded-full flex items-center justify-center text-white text-[10px] font-bold px-0.5'>
+										{unreadData.count > 99 ? "99+" : unreadData.count}
+									</span>
 								)}
 							</div>
 							<span className='text-lg hidden md:block'>Notifications</span>
@@ -113,7 +116,7 @@ const Sidebar = () => {
 					>
 						<div className='avatar hidden md:inline-flex'>
 							<div className='w-8 rounded-full'>
-								<img src={authUser?.profileImg || "/avatar-placeholder.png"} />
+								<Avatar src={authUser?.profileImg || "/avatar-placeholder.png"} />
 							</div>
 						</div>
 						<div className='flex justify-between flex-1'>

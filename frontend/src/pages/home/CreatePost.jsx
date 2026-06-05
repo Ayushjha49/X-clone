@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { IoCloseSharp } from "react-icons/io5";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
+import Avatar from "../../components/common/Avatar.jsx";
 
 const CreatePost = () => {
 	const [text, setText] = useState("");
@@ -42,18 +43,29 @@ const CreatePost = () => {
 
 	const handleImgChange = (e) => {
 		const file = e.target.files[0];
-		if (file) {
-			const reader = new FileReader();
-			reader.onload = () => setImg(reader.result);
-			reader.readAsDataURL(file);
+		if (!file) return;
+
+		// Client-side validation
+		const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+		if (!allowedTypes.includes(file.type)) {
+			toast.error("Only JPEG, PNG, GIF and WebP images are allowed");
+			return;
 		}
+		if (file.size > 5 * 1024 * 1024) {
+			toast.error("Image must be under 5MB");
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = () => setImg(reader.result);
+		reader.readAsDataURL(file);
 	};
 
 	return (
 		<div className='flex p-4 items-start gap-4 border-b border-base-300'>
 			<div className='avatar'>
 				<div className='w-8 rounded-full'>
-					<img src={authUser.profileImg || "/avatar-placeholder.png"} />
+					<Avatar src={authUser.profileImg || "/avatar-placeholder.png"} />
 				</div>
 			</div>
 			<form className='flex flex-col gap-2 w-full' onSubmit={handleSubmit}>
@@ -84,8 +96,8 @@ const CreatePost = () => {
 						<BsEmojiSmileFill className='fill-primary w-5 h-5 cursor-pointer' />
 					</div>
 					<input type='file' hidden ref={imgRef} onChange={handleImgChange} />
-					<button className='btn btn-primary rounded-full btn-sm text-white px-4'>
-						{isPending ? "Posting..." : "Post"}
+					<button className='btn btn-primary rounded-full btn-sm text-white px-4' disabled={isPending}>
+						{isPending && img ? "Uploading..." : isPending ? "Posting..." : "Post"}
 					</button>
 				</div>
 				{isError && <div className='text-red-500'>{error.message}</div>}

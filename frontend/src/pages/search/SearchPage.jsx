@@ -5,6 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import Post from "../../components/common/Post.jsx";
 import PostSkeleton from "../../components/skeletons/PostSkeleton.jsx";
 import LoadingSpinner from "../../components/common/LoadingSpinner.jsx";
+import Avatar from "../../components/common/Avatar.jsx";
 
 const SearchPage = () => {
 	const [query, setQuery] = useState("");
@@ -95,7 +96,7 @@ const SearchPage = () => {
 								>
 									<div className='avatar'>
 										<div className='w-10 rounded-full'>
-											<img src={user.profileImg || "/avatar-placeholder.png"} />
+											<Avatar src={user.profileImg || "/avatar-placeholder.png"} />
 										</div>
 									</div>
 									<div>

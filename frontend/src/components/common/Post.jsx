@@ -5,29 +5,61 @@ import { FaRegBookmark, FaBookmark } from "react-icons/fa6";
 import { FaTrash } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
 import LoadingSpinner from "./LoadingSpinner.jsx";
 import useRelativeTime from "../../hooks/useRelativeTime.js";
+import Avatar from "./Avatar.jsx";
+import UserListModal from "./UserListModal.jsx";
+import CommentRow from "./CommentRow.jsx";
 
 const Post = ({ post }) => {
 	const [comment, setComment] = useState("");
 	const [lightboxImg, setLightboxImg] = useState(null);
+	const [userListModal, setUserListModal] = useState(null);
 	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 	const queryClient = useQueryClient();
+	const navigate = useNavigate();
 
-	// If this is a retweet, display content from the original post
 	const displayPost = post.isRetweet && post.originalPost ? post.originalPost : post;
-
 	const postOwner = displayPost.user;
 	const isLiked = displayPost.likes.includes(authUser._id);
 	const isRetweeted = displayPost.retweets?.includes(authUser._id);
 	const isBookmarked = authUser.bookmarks?.includes(displayPost._id);
 	const isMyPost = authUser._id === displayPost.user._id;
-
 	const formattedDate = useRelativeTime(displayPost.createdAt);
+
+	// Navigate to post detail when clicking anywhere on the card,
+	// but not when the click is on an interactive element.
+	const handleCardClick = (e) => {
+		const tag = e.target.tagName.toLowerCase();
+		const interactiveTags = ["button", "a", "textarea", "input", "svg", "path"];
+		if (interactiveTags.includes(tag)) return;
+		if (e.target.closest("button, a, textarea, input, dialog")) return;
+		navigate(`/post/${displayPost._id}`);
+	};
+
+	// Update all feed caches when a comment/reply mutation succeeds
+	const updateCachedPost = (updatedPost) => {
+		queryClient.setQueriesData({ queryKey: ["posts"] }, (old) => {
+			if (!old?.pages) return old;
+			return {
+				...old,
+				pages: old.pages.map((pg) => ({
+					...pg,
+					posts: pg.posts.map((p) => {
+						if (p._id === updatedPost._id) return updatedPost;
+						if (p.isRetweet && p.originalPost?._id === updatedPost._id)
+							return { ...p, originalPost: updatedPost };
+						return p;
+					}),
+				})),
+			};
+		});
+		queryClient.setQueryData(["post", updatedPost._id], updatedPost);
+	};
 
 	const { mutate: deletePost, isPending: isDeleting } = useMutation({
 		mutationFn: async () => {
@@ -50,7 +82,6 @@ const Post = ({ post }) => {
 			return data;
 		},
 		onSuccess: (updatedLikes) => {
-			// Update all cached feed variants that contain this post
 			queryClient.setQueriesData({ queryKey: ["posts"] }, (oldData) => {
 				if (!oldData?.pages) return oldData;
 				return {
@@ -67,7 +98,7 @@ const Post = ({ post }) => {
 				};
 			});
 		},
-		onError: (error) => { toast.error(error.message); },
+		onError: (error) => toast.error(error.message),
 	});
 
 	const { mutate: retweetPost, isPending: isRetweeting } = useMutation({
@@ -105,7 +136,7 @@ const Post = ({ post }) => {
 				};
 			});
 		},
-		onError: (error) => { toast.error(error.message); },
+		onError: (error) => toast.error(error.message),
 	});
 
 	const { mutate: bookmarkPost, isPending: isBookmarking } = useMutation({
@@ -120,7 +151,7 @@ const Post = ({ post }) => {
 			queryClient.invalidateQueries({ queryKey: ["authUser"] });
 			queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
 		},
-		onError: (error) => { toast.error(error.message); },
+		onError: (error) => toast.error(error.message),
 	});
 
 	const { mutate: commentPost, isPending: isCommenting } = useMutation({
@@ -138,7 +169,7 @@ const Post = ({ post }) => {
 			toast.success("Comment posted successfully");
 			const newComment = updatedPost.comments[updatedPost.comments.length - 1];
 			const populatedComment = { ...newComment, user: authUser };
-			const mergeComments = (existingComments) => [...existingComments.slice(0, -1), populatedComment];
+			const mergeComments = (existing) => [...existing.slice(0, -1), populatedComment];
 			setComment("");
 			document.getElementById("comments_modal" + displayPost._id)?.close();
 			queryClient.setQueriesData({ queryKey: ["posts"] }, (oldData) => {
@@ -158,14 +189,8 @@ const Post = ({ post }) => {
 				};
 			});
 		},
-		onError: (error) => { toast.error(error.message); },
+		onError: (error) => toast.error(error.message),
 	});
-
-	const handleDeletePost = () => deletePost();
-	const handlePostComment = (e) => { e.preventDefault(); if (!isCommenting) commentPost(); };
-	const handleLikePost = () => { if (!isLiking) likePost(); };
-	const handleRetweetPost = () => { if (!isRetweeting) retweetPost(); };
-	const handleBookmarkPost = () => { if (!isBookmarking) bookmarkPost(); };
 
 	return (
 		<>
@@ -175,10 +200,7 @@ const Post = ({ post }) => {
 					className='fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90'
 					onClick={() => setLightboxImg(null)}
 				>
-					<button
-						className='absolute top-4 right-4 text-white hover:text-gray-300'
-						onClick={() => setLightboxImg(null)}
-					>
+					<button className='absolute top-4 right-4 text-white hover:text-gray-300' onClick={() => setLightboxImg(null)}>
 						<IoClose className='w-8 h-8' />
 					</button>
 					<img
@@ -190,8 +212,16 @@ const Post = ({ post }) => {
 				</div>
 			)}
 
-			<div className='flex flex-col border-b border-base-300'>
-				{/* Retweet label */}
+			{/* Who liked/retweeted modal */}
+			{userListModal && (
+				<UserListModal
+					postId={displayPost._id}
+					type={userListModal}
+					onClose={() => setUserListModal(null)}
+				/>
+			)}
+
+			<div className='flex flex-col border-b border-base-300 cursor-pointer' onClick={handleCardClick}>
 				{post.isRetweet && (
 					<div className='flex items-center gap-1 text-xs text-base-content/50 pt-2 pl-14'>
 						<BiRepost className='w-4 h-4' />
@@ -200,49 +230,70 @@ const Post = ({ post }) => {
 				)}
 				<div className='flex gap-2 items-start p-4'>
 					<div className='avatar'>
-						<Link to={`/profile/${postOwner.username}`} className='w-8 rounded-full overflow-hidden'>
-							<img src={postOwner.profileImg || "/avatar-placeholder.png"} />
+						<Link
+							to={`/profile/${postOwner.username}`}
+							className='w-8 rounded-full overflow-hidden block'
+							onClick={(e) => e.stopPropagation()}
+						>
+							<div className='w-8 rounded-full'>
+								<Avatar src={postOwner.profileImg || "/avatar-placeholder.png"} />
+							</div>
 						</Link>
 					</div>
 					<div className='flex flex-col flex-1'>
 						<div className='flex gap-2 items-center'>
-							<Link to={`/profile/${postOwner.username}`} className='font-bold'>
+							<Link
+								to={`/profile/${postOwner.username}`}
+								className='font-bold hover:underline'
+								onClick={(e) => e.stopPropagation()}
+							>
 								{postOwner.fullName}
 							</Link>
 							<span className='text-base-content/50 flex gap-1 text-sm'>
-								<Link to={`/profile/${postOwner.username}`}>@{postOwner.username}</Link>
+								<Link
+									to={`/profile/${postOwner.username}`}
+									onClick={(e) => e.stopPropagation()}
+								>
+									@{postOwner.username}
+								</Link>
 								<span>·</span>
 								<span>{formattedDate}</span>
 							</span>
 							{isMyPost && (
 								<span className='flex justify-end flex-1'>
-									{!isDeleting && (
-										<FaTrash className='cursor-pointer hover:text-red-500' onClick={handleDeletePost} />
+									{!isDeleting ? (
+										<FaTrash
+											className='cursor-pointer hover:text-red-500'
+											onClick={(e) => { e.stopPropagation(); deletePost(); }}
+										/>
+									) : (
+										<LoadingSpinner size='sm' />
 									)}
-									{isDeleting && <LoadingSpinner size='sm' />}
 								</span>
 							)}
 						</div>
-						<div className='flex flex-col gap-3 overflow-hidden'>
-							{/* Post text links to detail page */}
-							<Link to={`/post/${displayPost._id}`}>
-								<span className='hover:underline cursor-pointer'>{displayPost.text}</span>
-							</Link>
+
+						<div className='flex flex-col gap-3 overflow-hidden mt-1'>
+							{displayPost.text && <span>{displayPost.text}</span>}
 							{displayPost.img && (
 								<img
 									src={displayPost.img}
 									className='h-80 object-contain rounded-lg border border-base-300 cursor-zoom-in'
 									alt=''
-									onClick={() => setLightboxImg(displayPost.img)}
+									onClick={(e) => { e.stopPropagation(); setLightboxImg(displayPost.img); }}
 								/>
 							)}
 						</div>
+
 						<div className='flex justify-between mt-3'>
 							<div className='flex gap-4 items-center w-2/3 justify-between'>
-								{/* Comment */}
+								{/* Comment button */}
 								<div
 									className='flex gap-1 items-center cursor-pointer group'
-									onClick={() => document.getElementById("comments_modal" + displayPost._id).showModal()}
+									onClick={(e) => {
+										e.stopPropagation();
+										document.getElementById("comments_modal" + displayPost._id).showModal();
+									}}
 								>
 									<FaRegComment className='w-4 h-4 text-base-content/50 group-hover:text-sky-400' />
 									<span className='text-sm text-base-content/50 group-hover:text-sky-400'>
@@ -250,35 +301,27 @@ const Post = ({ post }) => {
 									</span>
 								</div>
 
+								{/* Comment modal */}
 								<dialog id={`comments_modal${displayPost._id}`} className='modal border-none outline-none'>
-									<div className='modal-box rounded border border-base-300'>
+									<div className='modal-box rounded border border-base-300 max-w-lg'>
 										<h3 className='font-bold text-lg mb-4'>COMMENTS</h3>
-										<div className='flex flex-col gap-3 max-h-60 overflow-auto'>
+										<div className='flex flex-col gap-4 max-h-72 overflow-auto pr-1'>
 											{displayPost.comments.length === 0 && (
-												<p className='text-sm text-base-content/50'>
-													No comments yet 🤔 Be the first one 😉
-												</p>
+												<p className='text-sm text-base-content/50'>No comments yet 🤔 Be the first one 😉</p>
 											)}
-											{displayPost.comments.map((comment) => (
-												<div key={comment._id} className='flex gap-2 items-start'>
-													<div className='avatar'>
-														<div className='w-8 rounded-full'>
-															<img src={comment.user.profileImg || "/avatar-placeholder.png"} />
-														</div>
-													</div>
-													<div className='flex flex-col'>
-														<div className='flex items-center gap-1'>
-															<span className='font-bold'>{comment.user.fullName}</span>
-															<span className='text-base-content/50 text-sm'>@{comment.user.username}</span>
-														</div>
-														<div className='text-sm'>{comment.text}</div>
-													</div>
-												</div>
+											{displayPost.comments.map((c) => (
+												<CommentRow
+													key={c._id}
+													comment={c}
+													postId={displayPost._id}
+													authUser={authUser}
+													onPostUpdated={updateCachedPost}
+												/>
 											))}
 										</div>
 										<form
 											className='flex gap-2 items-center mt-4 border-t border-base-300 pt-2'
-											onSubmit={handlePostComment}
+											onSubmit={(e) => { e.preventDefault(); if (!isCommenting) commentPost(); }}
 										>
 											<textarea
 												className='textarea w-full p-1 rounded text-md resize-none border border-base-300 focus:outline-none bg-base-100'
@@ -297,27 +340,35 @@ const Post = ({ post }) => {
 								</dialog>
 
 								{/* Retweet */}
-								<div className='flex gap-1 items-center group cursor-pointer' onClick={handleRetweetPost}>
+								<div
+									className='flex gap-1 items-center group cursor-pointer'
+									onClick={(e) => { e.stopPropagation(); if (!isRetweeting) retweetPost(); }}
+								>
 									{isRetweeting ? (
 										<LoadingSpinner size='sm' />
 									) : (
-										<BiRepost
-											className={`w-6 h-6 group-hover:text-green-500 ${isRetweeted ? "text-green-500" : "text-base-content/50"}`}
-										/>
+										<BiRepost className={`w-6 h-6 group-hover:text-green-500 ${isRetweeted ? "text-green-500" : "text-base-content/50"}`} />
 									)}
-									<span className={`text-sm group-hover:text-green-500 ${isRetweeted ? "text-green-500" : "text-base-content/50"}`}>
+									<span
+										className={`text-sm group-hover:text-green-500 ${isRetweeted ? "text-green-500" : "text-base-content/50"} hover:underline`}
+										onClick={(e) => { e.stopPropagation(); if (displayPost.retweets?.length > 0) setUserListModal("retweets"); }}
+									>
 										{displayPost.retweets?.length || 0}
 									</span>
 								</div>
 
 								{/* Like */}
-								<div className='flex gap-1 items-center group cursor-pointer' onClick={handleLikePost}>
+								<div
+									className='flex gap-1 items-center group cursor-pointer'
+									onClick={(e) => { e.stopPropagation(); if (!isLiking) likePost(); }}
+								>
 									{isLiking && <LoadingSpinner size='sm' />}
-									{!isLiked && !isLiking && (
-										<FaRegHeart className='w-4 h-4 cursor-pointer text-base-content/50 group-hover:text-pink-500' />
-									)}
+									{!isLiked && !isLiking && <FaRegHeart className='w-4 h-4 cursor-pointer text-base-content/50 group-hover:text-pink-500' />}
 									{isLiked && !isLiking && <FaHeart className='w-4 h-4 cursor-pointer text-pink-500' />}
-									<span className={`text-sm group-hover:text-pink-500 ${isLiked ? "text-pink-500" : "text-base-content/50"}`}>
+									<span
+										className={`text-sm group-hover:text-pink-500 ${isLiked ? "text-pink-500" : "text-base-content/50"} hover:underline`}
+										onClick={(e) => { e.stopPropagation(); if (displayPost.likes.length > 0) setUserListModal("likes"); }}
+									>
 										{displayPost.likes.length}
 									</span>
 								</div>
@@ -328,9 +379,15 @@ const Post = ({ post }) => {
 								{isBookmarking ? (
 									<LoadingSpinner size='sm' />
 								) : isBookmarked ? (
-									<FaBookmark className='w-4 h-4 text-primary cursor-pointer' onClick={handleBookmarkPost} />
+									<FaBookmark
+										className='w-4 h-4 text-primary cursor-pointer'
+										onClick={(e) => { e.stopPropagation(); bookmarkPost(); }}
+									/>
 								) : (
-									<FaRegBookmark className='w-4 h-4 text-base-content/50 cursor-pointer hover:text-primary' onClick={handleBookmarkPost} />
+									<FaRegBookmark
+										className='w-4 h-4 text-base-content/50 cursor-pointer hover:text-primary'
+										onClick={(e) => { e.stopPropagation(); bookmarkPost(); }}
+									/>
 								)}
 							</div>
 						</div>
@@ -340,4 +397,5 @@ const Post = ({ post }) => {
 		</>
 	);
 };
+
 export default Post;

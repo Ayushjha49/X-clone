@@ -6,6 +6,7 @@ import { toast } from "react-hot-toast";
 import { IoSettingsOutline, IoClose } from "react-icons/io5";
 import { FaUser, FaRetweet, FaBookmark } from "react-icons/fa";
 import { FaHeart, FaComment } from "react-icons/fa6";
+import Avatar from "../../components/common/Avatar.jsx";
 
 const notificationConfig = {
     follow:   { icon: <FaUser className='w-6 h-6 text-primary' />,   text: "followed you" },
@@ -99,7 +100,7 @@ const NotificationPage = () => {
                                 <Link to={`/profile/${notification.from.username}`} className='flex items-center gap-2'>
                                     <div className='avatar'>
                                         <div className='w-8 rounded-full'>
-                                            <img src={notification.from.profileImg || "/avatar-placeholder.png"} />
+                                            <Avatar src={notification.from.profileImg || "/avatar-placeholder.png"} />
                                         </div>
                                     </div>
                                     <span>

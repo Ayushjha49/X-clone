@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import useFollow from "../../hooks/useFollow.jsx";
 import RightPanelSkeleton from "../skeletons/RightPanelSkeleton.jsx";
 import LoadingSpinner from "./LoadingSpinner.jsx";
+import Avatar from "./Avatar.jsx";
 
 const RightPanel = () => {
 	const { data: suggestedUsers, isLoading } = useQuery({
@@ -20,7 +21,7 @@ const RightPanel = () => {
 		},
 	});
 
-	const { follow, isPending } = useFollow();
+	const { follow, isFollowPending } = useFollow();
 
 	if (suggestedUsers?.length === 0) {
 		return <div className='md:w-64 w-0'></div>;
@@ -49,7 +50,7 @@ const RightPanel = () => {
 								<div className='flex gap-2 items-center'>
 									<div className='avatar'>
 										<div className='w-8 rounded-full'>
-											<img src={user.profileImg || "/avatar-placeholder.png"} />
+											<Avatar src={user.profileImg || "/avatar-placeholder.png"} />
 										</div>
 									</div>
 									<div className='flex flex-col'>
@@ -67,7 +68,7 @@ const RightPanel = () => {
 											follow(user._id);
 										}}
 									>
-										{isPending ? <LoadingSpinner size='sm' /> : "Follow"}
+										{isFollowPending(user._id) ? <LoadingSpinner size='sm' /> : "Follow"}
 									</button>
 								</div>
 							</Link>

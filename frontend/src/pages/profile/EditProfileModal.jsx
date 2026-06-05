@@ -10,6 +10,7 @@ const EditProfileModal = ({ authUser }) => {
 		link: "",
 		newPassword: "",
 		currentPassword: "",
+		removeProfileImg: false,
 	});
 
 	const { updateProfile, isUpdatingProfile } = useUpdateUserProfile();
@@ -28,6 +29,7 @@ const EditProfileModal = ({ authUser }) => {
 				link: authUser.link,
 				newPassword: "",
 				currentPassword: "",
+				removeProfileImg: false,
 			});
 		}
 	}, [authUser]);
@@ -111,6 +113,17 @@ const EditProfileModal = ({ authUser }) => {
 							name='link'
 							onChange={handleInputChange}
 						/>
+						{authUser?.profileImg && (
+							<label className='flex items-center gap-2 cursor-pointer text-sm text-base-content/60'>
+								<input
+									type='checkbox'
+									className='checkbox checkbox-sm'
+									checked={formData.removeProfileImg}
+									onChange={(e) => setFormData({ ...formData, removeProfileImg: e.target.checked })}
+								/>
+								Remove profile picture
+							</label>
+						)}
 						<button className='btn btn-primary rounded-full btn-sm text-white'>
 							{isUpdatingProfile ? "Updating..." : "Update"}
 						</button>

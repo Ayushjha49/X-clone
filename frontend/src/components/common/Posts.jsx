@@ -65,6 +65,8 @@ const Posts = ({ feedType, username, userId }) => {
 
 	const allPosts = data?.pages.flatMap((page) => page.posts) ?? [];
 	const isEmpty = !isLoading && !isRefetching && allPosts.length === 0;
+	// Only show "caught up" after data has loaded and there's truly no next page
+	const showCaughtUp = !isLoading && !isRefetching && !isFetchingNextPage && !hasNextPage && allPosts.length > 0;
 
 	return (
 		<>
@@ -76,7 +78,15 @@ const Posts = ({ feedType, username, userId }) => {
 				</div>
 			)}
 
-			{isEmpty && (
+			{isEmpty && feedType === "following" && (
+				<div className='flex flex-col items-center gap-3 mt-16 text-base-content/50'>
+					<span className='text-5xl'>👀</span>
+					<p className='font-bold text-lg'>You&apos;re not following anyone yet</p>
+					<p className='text-sm'>Follow some people to see their posts here</p>
+				</div>
+			)}
+
+			{isEmpty && feedType !== "following" && (
 				<p className='text-center my-4'>No posts in this tab. Switch 👻</p>
 			)}
 
@@ -97,7 +107,7 @@ const Posts = ({ feedType, username, userId }) => {
 				</div>
 			)}
 
-			{!hasNextPage && allPosts.length > 0 && !isLoading && (
+			{showCaughtUp && (
 				<p className='text-center text-base-content/40 text-sm py-6'>You&apos;re all caught up!</p>
 			)}
 		</>
