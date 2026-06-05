@@ -359,20 +359,15 @@ export const searchPosts = async (req, res) => {
         const { q } = req.query;
         if (!q) return res.status(400).json({ error: "Query is required" });
 
-        // Use $text search (fast, indexed) with $regex fallback for short queries
-        let posts;
-        try {
-            posts = await populatePost(
-                Post.find({ $text: { $search: q } }, { score: { $meta: "textScore" } })
-                    .sort({ score: { $meta: "textScore" }, createdAt: -1 })
-                    .limit(20)
-            );
-        } catch {
-            // Fallback to regex if text index not yet available
-            posts = await populatePost(
-                Post.find({ text: { $regex: q, $options: "i" } }).sort({ createdAt: -1 }).limit(20)
-            );
-        }
+        // Use $regex for reliable partial/substring matching from the first character.
+        // $text (full-text search) tokenises words and strips punctuation, so queries
+        // like "I'm" or any partial word fail to match until a complete token is typed.
+        const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const posts = await populatePost(
+            Post.find({ text: { $regex: escapedQ, $options: "i" } })
+                .sort({ createdAt: -1 })
+                .limit(20)
+        );
         res.status(200).json(posts);
     } catch (error) {
         console.log("Error in searchPosts controller: ", error.message);
