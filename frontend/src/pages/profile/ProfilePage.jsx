@@ -121,7 +121,7 @@ const ProfilePage = () => {
 					{!isLoading && !isRefetching && user && (
 						<>
 							<div className='flex gap-10 px-4 py-2 items-center'>
-								<Link to='/'>
+								<Link to='/' className='p-2 rounded-full hover:bg-white/15 transition-colors duration-200'>
 									<FaArrowLeft className='w-4 h-4' />
 								</Link>
 								<div className='flex flex-col'>

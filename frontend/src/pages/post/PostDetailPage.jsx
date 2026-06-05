@@ -177,7 +177,10 @@ const PostDetailPage = () => {
 
 			{/* Header */}
 			<div className='flex items-center gap-4 p-4 border-b border-base-300'>
-				<button onClick={() => window.history.back()}>
+				<button
+					onClick={() => window.history.back()}
+					className='p-2 rounded-full hover:bg-white/15 transition-colors duration-200'
+				>
 					<FaArrowLeft className='w-4 h-4' />
 				</button>
 				<p className='font-bold text-lg'>Post</p>
@@ -212,7 +215,7 @@ const PostDetailPage = () => {
 							{isMyPost && (
 								<span>
 									{!isDeleting ? (
-										<FaTrash className='w-4 h-4 cursor-pointer hover:text-red-500' onClick={() => deletePost()} />
+										<FaTrash className='w-4 h-4 cursor-pointer hover:text-red-500' onClick={() => { if (window.confirm("Delete this post? This cannot be undone.")) deletePost(); }} />
 									) : (
 										<LoadingSpinner size='sm' />
 									)}
@@ -301,7 +304,7 @@ const PostDetailPage = () => {
 						rows={1}
 						onChange={(e) => setComment(e.target.value)}
 					/>
-					<button className='btn btn-primary rounded-full btn-sm text-white px-4'>
+					<button className='btn btn-primary rounded-full btn-sm text-white px-4' disabled={isCommenting || !comment.trim()}>
 						{isCommenting ? <LoadingSpinner size='sm' /> : "Reply"}
 					</button>
 				</form>
