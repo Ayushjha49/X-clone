@@ -16,6 +16,7 @@ const PostDetailPage = () => {
 	const { id } = useParams();
 	const [comment, setComment] = useState("");
 	const [userListModal, setUserListModal] = useState(null);
+	const [showDeleteMenu, setShowDeleteMenu] = useState(false);
 	const { data: authUser } = useQuery({ queryKey: ["authUser"] });
 	const queryClient = useQueryClient();
 
@@ -214,10 +215,31 @@ const PostDetailPage = () => {
 							</div>
 							{isMyPost && (
 								<span>
-									{!isDeleting ? (
-										<FaTrash className='w-4 h-4 cursor-pointer hover:text-red-500' onClick={() => { if (window.confirm("Delete this post? This cannot be undone.")) deletePost(); }} />
-									) : (
+									{isDeleting ? (
 										<LoadingSpinner size='sm' />
+									) : (
+										<div className='relative'>
+											<FaTrash
+												className='w-4 h-4 cursor-pointer hover:text-red-500'
+												onClick={() => setShowDeleteMenu((v) => !v)}
+											/>
+											{showDeleteMenu && (
+												<div className='absolute right-0 top-6 z-50 bg-base-100 border border-base-300 rounded-xl shadow-lg w-44 py-1 overflow-hidden'>
+													<button
+														className='w-full text-left px-4 py-3 text-red-500 font-bold hover:bg-base-200 transition-colors text-sm'
+														onClick={() => { setShowDeleteMenu(false); deletePost(); }}
+													>
+														Delete post
+													</button>
+													<button
+														className='w-full text-left px-4 py-3 hover:bg-base-200 transition-colors text-sm'
+														onClick={() => setShowDeleteMenu(false)}
+													>
+														Cancel
+													</button>
+												</div>
+											)}
+										</div>
 									)}
 								</span>
 							)}
